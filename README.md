@@ -2,7 +2,7 @@
 
 A Facepunch implementation for Fish-Net.
 
-	This is an improved fork from https://github.com/Chykary/FizzyFacepunch.
+	This is an improved fork from https://github.com/Chykary/FizzyFacepunch and https://github.com/FirstGearGames/FishySteamworks/.
 
 FishyFacepunch brings together **[Steam](https://store.steampowered.com)** and **[Fish-Net](https://github.com/FirstGearGames/FishNet)** . It supports only the new SteamSockets.
 
