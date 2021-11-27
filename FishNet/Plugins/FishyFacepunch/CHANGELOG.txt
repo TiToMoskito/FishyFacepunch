@@ -1,2 +1,6 @@
 1.0.0
 	- Initial release.
+1.1.0
+	- Support for client hosted games (needs two separated steam accounts, to test) - Thank to Punfish
+	- Organized folder structure
+	- Removed ChannelData

@@ -14,7 +14,7 @@ namespace FishyFacepunch
         /// The SteamId for the local user after connecting to or starting the server. This is populated automatically.
         /// </summary>
         [Header("Info")]
-        [System.NonSerialized]
+        //[System.NonSerialized]
         public ulong LocalUserSteamID = 0;
         #endregion
 
@@ -58,21 +58,21 @@ namespace FishyFacepunch
         [Tooltip("Timeout for connecting in seconds.")]
         [SerializeField]
         private int _timeout = 25;
-
-        [Tooltip("Allow or disallow P2P connections to fall back to being relayed through the Steam servers if a direct connection or NAT-traversal cannot be established.")]
-        [SerializeField]
-        private bool _peerToPeer = true;
         #endregion
 
         #region Private.
         /// <summary>
-        /// Transport channels to use.
+        /// MTUs for each channel.
         /// </summary>
-        private ChannelData[] _channels;
+        private int[] _mtus;
         /// <summary>
         /// Client for the transport.
         /// </summary>
         private Client.ClientSocket _client = new Client.ClientSocket();
+        /// <summary>
+        /// Client when acting as host.
+        /// </summary>
+        private Client.ClientHostSocket _clientHost = new Client.ClientHostSocket();
         /// <summary>
         /// Server for the transport.
         /// </summary>
@@ -81,12 +81,12 @@ namespace FishyFacepunch
 
         #region Const.
         /// <summary>
-        /// How often to try and get SteamId.
+        /// Id to use for client when acting as host.
         /// </summary>
-        private const float GET_ID_INTERVAL = 1f;
+        internal const int CLIENT_HOST_ID = short.MaxValue;
         #endregion
 
-        #region Initialization and unity.
+        #region Initialization and Unity.
         public override void Initialize(NetworkManager networkManager)
         {
             base.Initialize(networkManager);
@@ -95,9 +95,9 @@ namespace FishyFacepunch
 
 #if !UNITY_SERVER
             SteamClient.Init(_steamAppID, true);
-            SteamNetworking.AllowP2PPacketRelay(_peerToPeer);
+            SteamNetworking.AllowP2PPacketRelay(true);
 #endif
-
+            _clientHost.Initialize(this);
             _client.Initialize(this);
             _server.Initialize(this);
         }
@@ -105,6 +105,11 @@ namespace FishyFacepunch
         private void OnDestroy()
         {
             Shutdown();
+        }
+
+        private void Update()
+        {
+            _clientHost.CheckSetStarted();
         }
         #endregion
 
@@ -114,10 +119,10 @@ namespace FishyFacepunch
         /// </summary>
         private void CreateChannelData()
         {
-            _channels = new ChannelData[2]
+            _mtus = new int[2]
             {
-                new ChannelData(Channel.Reliable, 1048576),
-                new ChannelData(Channel.Unreliable, 1200)
+                1048576,
+                1200
             };
         }
 
@@ -162,9 +167,9 @@ namespace FishyFacepunch
         public override LocalConnectionStates GetConnectionState(bool server)
         {
             if (server)
-                return _server.GetConnectionState();
+                return _server.GetLocalConnectionState();
             else
-                return _client.GetConnectionState();
+                return _client.GetLocalConnectionState();
         }
         /// <summary>
         /// Gets the current ConnectionState of a remote client on the server.
@@ -208,9 +213,15 @@ namespace FishyFacepunch
         public override void IterateIncoming(bool server)
         {
             if (server)
+            {
                 _server.IterateIncoming();
+
+            }
             else
+            {
                 _client.IterateIncoming();
+                _clientHost.IterateIncoming();
+            }                
         }
 
         /// <summary>
@@ -262,6 +273,7 @@ namespace FishyFacepunch
         public override void SendToServer(byte channelId, ArraySegment<byte> segment)
         {
             _client.SendToServer(channelId, segment);
+            _clientHost.SendToServer(channelId, segment);
         }
         /// <summary>
         /// Sends data to a client.
@@ -387,28 +399,41 @@ namespace FishyFacepunch
         /// <returns>True if there were no blocks. A true response does not promise a socket will or has connected.</returns>
         private bool StartServer()
         {
+            bool clientRunning = false;
 #if !UNITY_SERVER
             if (!SteamClient.IsValid)
             {
-                Debug.LogError("SteamWorks not initialized. Server could not be started.");
+                Debug.LogError("Steam Facepunch not initialized. Server could not be started.");
                 return false;
             }
-            if (_client.GetConnectionState() != LocalConnectionStates.Stopped)
-            {
-                Debug.LogError("Server cannot run while client is running.");
-                return false;
-            }
+            //if (_client.GetLocalConnectionState() != LocalConnectionStates.Stopped)
+            //{
+            //    Debug.LogError("Server cannot run while client is running.");
+            //    return false;
+            //}
+
+            clientRunning = (_client.GetLocalConnectionState() != LocalConnectionStates.Stopped);
+            /* If remote _client is running then stop it
+             * and start the client host variant. */
+            if (clientRunning)
+                _client.StopConnection();
 #endif
 
             _server.ResetInvalidSocket();
-            if (_server.GetConnectionState() != LocalConnectionStates.Stopped)
+            if (_server.GetLocalConnectionState() != LocalConnectionStates.Stopped)
             {
                 Debug.LogError("Server is already running.");
                 return false;
             }
-            InitializeRelayNetworkAccess();           
+            InitializeRelayNetworkAccess();
 
-            return _server.StartConnection(_serverBindAddress, _port, _maximumClients, _peerToPeer);
+            bool result = _server.StartConnection(_serverBindAddress, _port, _maximumClients);
+
+            //If need to restart client.
+            if (result && clientRunning)
+                StartConnection(false);
+
+            return result;
         }
 
         /// <summary>
@@ -428,22 +453,32 @@ namespace FishyFacepunch
         {
             if (!SteamClient.IsValid)
             {
-                Debug.LogError("SteamWorks not initialized. Client could not be started.");
+                Debug.LogError("Steam Facepunch not initialized. Client could not be started.");
                 return false;
             }
-            //if (_server.GetConnectionState() != LocalConnectionStates.Stopped)
-            //{
-            //    Debug.LogError("Client cannot run while server is running.");
-            //    return false;
-            //}
-            if (_client.GetConnectionState() != LocalConnectionStates.Stopped)
-            {
-                Debug.LogError("Client is already running.");
-                return false;
-            }
-            InitializeRelayNetworkAccess();
 
-            _client.StartConnection(address, _port, _peerToPeer);
+            //If not acting as a host.
+            if (_server.GetLocalConnectionState() == LocalConnectionStates.Stopped)
+            {
+                if (_client.GetLocalConnectionState() != LocalConnectionStates.Stopped)
+                {
+                    Debug.LogError("Client is already running.");
+                    return false;
+                }
+                //Stop client host if running.
+                if (_clientHost.GetLocalConnectionState() != LocalConnectionStates.Stopped)
+                    _clientHost.StopConnection();
+                //Initialize.
+                InitializeRelayNetworkAccess();
+                
+                _client.StartConnection(address, _port);
+            }
+            //Acting as host.
+            else
+            {
+                _clientHost.StartConnection(_server);
+            }
+
             return true;
         }
 
@@ -452,7 +487,10 @@ namespace FishyFacepunch
         /// </summary>
         private bool StopClient()
         {
-            return _client.StopConnection();
+            bool result = false;
+            result |= _client.StopConnection();
+            result |= _clientHost.StopConnection();
+            return result;
         }
 
         /// <summary>
@@ -474,7 +512,7 @@ namespace FishyFacepunch
         /// <returns></returns>
         public override byte GetChannelCount()
         {
-            return (byte)_channels.Length;
+            return (byte)_mtus.Length;
         }
         /// <summary>
         /// Returns which channel to use by default for reliable.
@@ -498,13 +536,13 @@ namespace FishyFacepunch
         /// <returns></returns>
         public override int GetMTU(byte channel)
         {
-            if (channel >= _channels.Length)
+            if (channel >= _mtus.Length)
             {
                 Debug.LogError($"Channel {channel} is out of bounds.");
                 return 0;
             }
 
-            return _channels[channel].MaximumTransmissionUnit;
+            return _mtus[channel];
         }
         #endregion
     }

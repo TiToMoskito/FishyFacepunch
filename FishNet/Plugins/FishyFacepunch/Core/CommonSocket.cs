@@ -4,6 +4,7 @@ using FishNet.Transporting;
 using Steamworks;
 using Steamworks.Data;
 using System;
+using System.Net;
 using System.Runtime.InteropServices;
 using UnityEngine;
 
@@ -22,7 +23,7 @@ namespace FishyFacepunch
         /// Returns the current ConnectionState.
         /// </summary>
         /// <returns></returns>
-        internal LocalConnectionStates GetConnectionState()
+        internal LocalConnectionStates GetLocalConnectionState()
         {
             return _connectionState;
         }
@@ -30,7 +31,7 @@ namespace FishyFacepunch
         /// Sets a new connection state.
         /// </summary>
         /// <param name="connectionState"></param>
-        protected void SetConnectionState(LocalConnectionStates connectionState, bool asServer)
+        protected virtual void SetLocalConnectionState(LocalConnectionStates connectionState, bool asServer)
         {
             //If state hasn't changed.
             if (connectionState == _connectionState)
@@ -45,10 +46,6 @@ namespace FishyFacepunch
         #endregion
 
         #region Protected.
-        /// <summary>
-        /// True if using PeerToPeer.
-        /// </summary>
-        protected bool PeerToPeer = false;
         /// <summary>
         /// Transport controlling this socket.
         /// </summary>
@@ -81,6 +78,31 @@ namespace FishyFacepunch
             int maxMTU = Transport.GetMTU(0);
             maxMTU = Math.Max(maxMTU, Transport.GetMTU(1));
             InboundBuffer = new byte[maxMTU];
+        }
+
+        /// <summary>
+        /// Check if this is a valid address to start a p2p or c2s session.
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        protected bool IsValidAddress(string address)
+        {
+            //If address is required then make sure it can be parsed.
+            if (!string.IsNullOrEmpty(address))
+            {
+                if (!IPAddress.TryParse(address, out IPAddress result))
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            else
+            {
+                return false;
+            }
         }
 
         /// <summary>

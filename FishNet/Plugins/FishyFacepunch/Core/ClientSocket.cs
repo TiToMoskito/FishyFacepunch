@@ -58,24 +58,22 @@ namespace FishyFacepunch.Client
         /// <param name="port"></param>
         /// <param name="channelsCount"></param>
         /// <param name="pollTime"></param>
-        internal async void StartConnection(string address, ushort port, bool peerToPeer)
+        internal async void StartConnection(string address, ushort port)
         {
-            base.PeerToPeer = peerToPeer;
-
             cancelToken = new CancellationTokenSource();
             SteamNetworkingSockets.OnConnectionStatusChanged += OnConnectionStatusChanged;
             ConnectionTimeout = TimeSpan.FromSeconds(Math.Max(1, base.Transport.GetTimeout(false)));
 
-            SetConnectionState(LocalConnectionStates.Starting, false);
+            SetLocalConnectionState(LocalConnectionStates.Starting, false);
 
             try
             {
                 if (SteamClient.IsValid)
-                {
-                    _hostSteamID = UInt64.Parse(address);
+                {                    
                     connectedComplete = new TaskCompletionSource<Task>();
-                    if (peerToPeer)
+                    if (!IsValidAddress(address))
                     {
+                        _hostSteamID = UInt64.Parse(address);
                         HostConnectionManager = SteamNetworkingSockets.ConnectRelay<FishyConnectionManager>(_hostSteamID);
                     }
                     else
@@ -97,25 +95,25 @@ namespace FishyFacepunch.Client
                             Debug.LogError($"Connection to {address} timed out.");
                             StopConnection();
                         }
-                        SetConnectionState(LocalConnectionStates.Stopped, false);
+                        SetLocalConnectionState(LocalConnectionStates.Stopped, false);
                     }
                 }
                 else
                 {
                     Debug.LogError("SteamWorks not initialized");
-                    SetConnectionState(LocalConnectionStates.Stopped, false);
+                    SetLocalConnectionState(LocalConnectionStates.Stopped, false);
                 }
             }
             catch (FormatException)
             {
                 Debug.LogError($"Connection string was not in the right format. Did you enter a SteamId?");
-                SetConnectionState(LocalConnectionStates.Stopped, false);
+                SetLocalConnectionState(LocalConnectionStates.Stopped, false);
                 _Error = true;
             }
             catch (Exception ex)
             {
                 Debug.LogError(ex.Message);
-                SetConnectionState(LocalConnectionStates.Stopped, false);
+                SetLocalConnectionState(LocalConnectionStates.Stopped, false);
                 _Error = true;
             }
             finally
@@ -123,7 +121,7 @@ namespace FishyFacepunch.Client
                 if (_Error)
                 {
                     Debug.LogError("Connection failed.");
-                    SetConnectionState(LocalConnectionStates.Stopped, false);
+                    SetLocalConnectionState(LocalConnectionStates.Stopped, false);
                 }
             }
         }
@@ -135,7 +133,7 @@ namespace FishyFacepunch.Client
         {
             if (info.State == ConnectionState.Connected)
             {
-                SetConnectionState(LocalConnectionStates.Started, false);
+                SetLocalConnectionState(LocalConnectionStates.Started, false);
                 connectedComplete.SetResult(connectedComplete.Task);
             }
             else if (info.State == ConnectionState.ClosedByPeer || info.State == ConnectionState.ProblemDetectedLocally)
@@ -156,10 +154,10 @@ namespace FishyFacepunch.Client
         /// </summary>
         internal bool StopConnection()
         {
-            if (base.GetConnectionState() == LocalConnectionStates.Stopped || base.GetConnectionState() == LocalConnectionStates.Stopping)
+            if (base.GetLocalConnectionState() == LocalConnectionStates.Stopped || base.GetLocalConnectionState() == LocalConnectionStates.Stopping)
                 return false;
 
-            SetConnectionState(LocalConnectionStates.Stopping, false);
+            SetLocalConnectionState(LocalConnectionStates.Stopping, false);
 
             cancelToken?.Cancel();
 
@@ -173,7 +171,7 @@ namespace FishyFacepunch.Client
                 HostConnectionManager = null;
             }
 
-            SetConnectionState(LocalConnectionStates.Stopped, false);
+            SetLocalConnectionState(LocalConnectionStates.Stopped, false);
 
             return true;
         }
@@ -183,7 +181,7 @@ namespace FishyFacepunch.Client
         /// </summary>
         internal void IterateIncoming()
         {
-            if (base.GetConnectionState() != LocalConnectionStates.Started)
+            if (base.GetLocalConnectionState() != LocalConnectionStates.Started)
                 return;
 
             HostConnectionManager.Receive(MAX_MESSAGES);
@@ -202,7 +200,7 @@ namespace FishyFacepunch.Client
         /// <param name="segment"></param>
         internal void SendToServer(byte channelId, ArraySegment<byte> segment)
         {
-            if (base.GetConnectionState() != LocalConnectionStates.Started)
+            if (base.GetLocalConnectionState() != LocalConnectionStates.Started)
                 return;
 
             Result res = base.Send(HostConnection, segment, channelId);
@@ -225,7 +223,7 @@ namespace FishyFacepunch.Client
         /// </summary>
         internal void IterateOutgoing()
         {
-            if (base.GetConnectionState() != LocalConnectionStates.Started)
+            if (base.GetLocalConnectionState() != LocalConnectionStates.Started)
                 return;
 
             HostConnection.Flush();
