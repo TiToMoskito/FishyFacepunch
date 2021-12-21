@@ -4,3 +4,5 @@
 	- Support for client hosted games (needs two separated steam accounts, to test) - Thank to Punfish
 	- Organized folder structure
 	- Removed ChannelData
+1.1.1
+	- FishNetworking 0.1.5.Nightly.10 Support
