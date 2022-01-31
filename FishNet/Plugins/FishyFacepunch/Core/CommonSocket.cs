@@ -4,6 +4,7 @@ using FishNet.Transporting;
 using Steamworks;
 using Steamworks.Data;
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Runtime.InteropServices;
 using UnityEngine;
@@ -67,6 +68,14 @@ namespace FishyFacepunch
         protected const int MAX_MESSAGES = 256;
         #endregion
 
+        internal void ClearQueue(Queue<LocalPacket> lpq)
+        {
+            while (lpq.Count > 0)
+            {
+                LocalPacket lp = lpq.Dequeue();
+                lp.Dispose();
+            }
+        }
         /// <summary>
         /// Initializes this for use.
         /// </summary>
@@ -164,6 +173,5 @@ namespace FishyFacepunch
             return (managedArray, channel);
         }
     }
-
 }
 #endif

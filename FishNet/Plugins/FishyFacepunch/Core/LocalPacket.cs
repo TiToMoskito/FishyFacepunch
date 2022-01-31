@@ -15,5 +15,11 @@ namespace FishyFacepunch
             Buffer.BlockCopy(data.Array, data.Offset, Data, 0, Length);
             Channel = channel;
         }
+
+        public void Dispose()
+        {
+            if (Data != null)
+                ByteArrayPool.Store(Data);
+        }
     }
 }

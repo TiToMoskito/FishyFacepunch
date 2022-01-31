@@ -1,5 +1,4 @@
 #if !FishyFacepunch
-using FishNet.Managing;
 using FishNet.Managing.Logging;
 using FishNet.Transporting;
 using Steamworks;
@@ -217,7 +216,6 @@ namespace FishyFacepunch.Client
             }
         }
 
-
         /// <summary>
         /// Sends queued data to server.
         /// </summary>
@@ -228,7 +226,6 @@ namespace FishyFacepunch.Client
 
             HostConnection.Flush();
         }
-
     }
 }
 #endif // !DISABLESTEAMWORKS

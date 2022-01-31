@@ -4,7 +4,6 @@ using FishyFacepunch.Client;
 using Steamworks;
 using Steamworks.Data;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -59,7 +58,7 @@ namespace FishyFacepunch.Server
         /// <summary>
         /// Packets received from local client.
         /// </summary>
-        private ConcurrentQueue<LocalPacket> _clientHostIncoming = new ConcurrentQueue<LocalPacket>();
+        private Queue<LocalPacket> _clientHostIncoming = new Queue<LocalPacket>();
         /// <summary>
         /// Socket for client host. Will be null if not being used.
         /// </summary>
@@ -262,10 +261,12 @@ namespace FishyFacepunch.Server
                 return;
 
             //Iterate local client packets first.
-            while (_clientHostIncoming.TryDequeue(out LocalPacket packet))
+            while (_clientHostIncoming.Count > 0)
             {
+                LocalPacket packet = _clientHostIncoming.Dequeue();
                 ArraySegment<byte> segment = new ArraySegment<byte>(packet.Data, 0, packet.Length);
                 base.Transport.HandleServerReceivedDataArgs(new ServerReceivedDataArgs(segment, (Channel)packet.Channel, FishyFacepunch.CLIENT_HOST_ID));
+                packet.Dispose();
             }
 
             _socket.Receive(MAX_MESSAGES);
@@ -370,7 +371,7 @@ namespace FishyFacepunch.Server
             //If not started flush incoming from local client.
             if (!started)
             {
-                while (_clientHostIncoming.TryDequeue(out _)) ;
+                base.ClearQueue(_clientHostIncoming);
                 base.Transport.HandleRemoteConnectionState(new RemoteConnectionStateArgs(RemoteConnectionStates.Stopped, FishyFacepunch.CLIENT_HOST_ID));
             }
             else
@@ -386,7 +387,10 @@ namespace FishyFacepunch.Server
         internal void ReceivedFromClientHost(LocalPacket packet)
         {
             if (!_clientHostStarted)
+            {
+                packet.Dispose();
                 return;
+            }
 
             _clientHostIncoming.Enqueue(packet);
         }

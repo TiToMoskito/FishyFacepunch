@@ -9,15 +9,6 @@ namespace FishyFacepunch
 {
     public class FishyFacepunch : Transport
     {
-        #region Public.
-        /// <summary>
-        /// The SteamId for the local user after connecting to or starting the server. This is populated automatically.
-        /// </summary>
-        [Header("Info")]
-        //[System.NonSerialized]
-        public ulong LocalUserSteamID = 0;
-        #endregion
-
         #region Serialized.
         /// <summary>
         /// Steam application Id.
@@ -133,7 +124,6 @@ namespace FishyFacepunch
         {
 #if !UNITY_SERVER
             SteamNetworkingUtils.InitRelayNetworkAccess();
-            LocalUserSteamID = SteamClient.SteamId;
 #endif
         }
         #endregion
@@ -497,14 +487,6 @@ namespace FishyFacepunch
         #endregion
 
         #region Channels.
-        /// <summary>
-        /// Returns how many channels the transport is using.
-        /// </summary>
-        /// <returns></returns>
-        public override byte GetChannelCount()
-        {
-            return (byte)_mtus.Length;
-        }
         /// <summary>
         /// Returns which channel to use by default for reliable.
         /// </summary>
