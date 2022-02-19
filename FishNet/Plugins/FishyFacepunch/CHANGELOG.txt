@@ -9,3 +9,6 @@
 1.2.0
 	- Removed GC (Full Credits to Punfish - Thank you)
 	- Removed obsolete method
+1.3.0
+	- Removed obsolete methods
+	- FishNetworking 1.3.0 Support

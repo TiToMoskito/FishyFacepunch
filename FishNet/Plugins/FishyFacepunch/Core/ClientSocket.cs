@@ -87,11 +87,13 @@ namespace FishyFacepunch.Client
                     {
                         if (cancelToken.IsCancellationRequested)
                         {
-                            Debug.LogError($"The connection attempt was cancelled.");
+                            if (base.Transport.NetworkManager.CanLog(LoggingType.Error))
+                                Debug.LogError($"The connection attempt was cancelled.");
                         }
                         else if (timeOutTask.IsCompleted)
                         {
-                            Debug.LogError($"Connection to {address} timed out.");
+                            if (base.Transport.NetworkManager.CanLog(LoggingType.Error))
+                                Debug.LogError($"Connection to {address} timed out.");
                             StopConnection();
                         }
                         SetLocalConnectionState(LocalConnectionStates.Stopped, false);
@@ -99,19 +101,22 @@ namespace FishyFacepunch.Client
                 }
                 else
                 {
-                    Debug.LogError("SteamWorks not initialized");
+                    if (base.Transport.NetworkManager.CanLog(LoggingType.Error))
+                        Debug.LogError("SteamWorks not initialized");
                     SetLocalConnectionState(LocalConnectionStates.Stopped, false);
                 }
             }
             catch (FormatException)
             {
-                Debug.LogError($"Connection string was not in the right format. Did you enter a SteamId?");
+                if (base.Transport.NetworkManager.CanLog(LoggingType.Error))
+                    Debug.LogError($"Connection string was not in the right format. Did you enter a SteamId?");
                 SetLocalConnectionState(LocalConnectionStates.Stopped, false);
                 _Error = true;
             }
             catch (Exception ex)
             {
-                Debug.LogError(ex.Message);
+                if (base.Transport.NetworkManager.CanLog(LoggingType.Error))
+                    Debug.LogError(ex.Message);
                 SetLocalConnectionState(LocalConnectionStates.Stopped, false);
                 _Error = true;
             }
@@ -119,7 +124,8 @@ namespace FishyFacepunch.Client
             {
                 if (_Error)
                 {
-                    Debug.LogError("Connection failed.");
+                    if (base.Transport.NetworkManager.CanLog(LoggingType.Error))
+                        Debug.LogError("Connection failed.");
                     SetLocalConnectionState(LocalConnectionStates.Stopped, false);
                 }
             }
@@ -165,7 +171,8 @@ namespace FishyFacepunch.Client
 
             if (HostConnectionManager != null)
             {
-                Debug.Log("Sending Disconnect message");
+                if (base.Transport.NetworkManager.CanLog(LoggingType.Common))
+                    Debug.Log("Sending Disconnect message");
                 HostConnection.Close(false, 0, "Graceful disconnect");
                 HostConnectionManager = null;
             }
@@ -189,7 +196,7 @@ namespace FishyFacepunch.Client
         private void OnMessageReceived(IntPtr dataPtr, int size)
         {
             (byte[] data, int ch) = ProcessMessage(dataPtr, size);
-            base.Transport.HandleClientReceivedDataArgs(new ClientReceivedDataArgs(new ArraySegment<byte>(data), (Channel)ch));
+            base.Transport.HandleClientReceivedData(new ClientReceivedDataArgs(new ArraySegment<byte>(data), (Channel)ch, Transport.Index));
         }
 
         /// <summary>

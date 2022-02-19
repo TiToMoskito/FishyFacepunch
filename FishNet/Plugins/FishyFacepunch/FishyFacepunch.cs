@@ -78,9 +78,9 @@ namespace FishyFacepunch
         #endregion
 
         #region Initialization and Unity.
-        public override void Initialize(NetworkManager networkManager)
+        public override void Initialize(NetworkManager networkManager, int transportIndex)
         {
-            base.Initialize(networkManager);
+            base.Initialize(networkManager, transportIndex);
 
             CreateChannelData();
 
@@ -236,7 +236,7 @@ namespace FishyFacepunch
         /// Handles a ClientReceivedDataArgs.
         /// </summary>
         /// <param name="receivedDataArgs"></param>
-        public override void HandleClientReceivedDataArgs(ClientReceivedDataArgs receivedDataArgs)
+        public override void HandleClientReceivedData(ClientReceivedDataArgs receivedDataArgs)
         {
             OnClientReceivedData?.Invoke(receivedDataArgs);
         }
@@ -248,7 +248,7 @@ namespace FishyFacepunch
         /// Handles a ClientReceivedDataArgs.
         /// </summary>
         /// <param name="receivedDataArgs"></param>
-        public override void HandleServerReceivedDataArgs(ServerReceivedDataArgs receivedDataArgs)
+        public override void HandleServerReceivedData(ServerReceivedDataArgs receivedDataArgs)
         {
             OnServerReceivedData?.Invoke(receivedDataArgs);
         }
@@ -487,20 +487,6 @@ namespace FishyFacepunch
         #endregion
 
         #region Channels.
-        /// <summary>
-        /// Returns which channel to use by default for reliable.
-        /// </summary>
-        public override byte GetDefaultReliableChannel()
-        {
-            return 0;
-        }
-        /// <summary>
-        /// Returns which channel to use by default for unreliable.
-        /// </summary>
-        public override byte GetDefaultUnreliableChannel()
-        {
-            return 1;
-        }
         /// <summary>
         /// Gets the MTU for a channel. This should take header size into consideration.
         /// For example, if MTU is 1200 and a packet header for this channel is 10 in size, this method should return 1190.
