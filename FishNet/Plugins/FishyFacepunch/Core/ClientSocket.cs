@@ -196,7 +196,7 @@ namespace FishyFacepunch.Client
         private void OnMessageReceived(IntPtr dataPtr, int size)
         {
             (byte[] data, int ch) = ProcessMessage(dataPtr, size);
-            base.Transport.HandleClientReceivedData(new ClientReceivedDataArgs(new ArraySegment<byte>(data), (Channel)ch, Transport.Index));
+            base.Transport.HandleClientReceivedDataArgs(new ClientReceivedDataArgs(new ArraySegment<byte>(data), (Channel)ch, Transport.Index));
         }
 
         /// <summary>

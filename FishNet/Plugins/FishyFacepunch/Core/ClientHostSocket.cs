@@ -95,7 +95,7 @@ namespace FishyFacepunch.Client
             {
                 LocalPacket packet = _incoming.Dequeue();
                 ArraySegment<byte> segment = new ArraySegment<byte>(packet.Data, 0, packet.Length);
-                base.Transport.HandleClientReceivedData(new ClientReceivedDataArgs(segment, (Channel)packet.Channel, Transport.Index));
+                base.Transport.HandleClientReceivedDataArgs(new ClientReceivedDataArgs(segment, (Channel)packet.Channel, Transport.Index));
                 packet.Dispose();
             }
         }

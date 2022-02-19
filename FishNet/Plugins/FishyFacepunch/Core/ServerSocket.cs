@@ -275,7 +275,7 @@ namespace FishyFacepunch.Server
             {
                 LocalPacket packet = _clientHostIncoming.Dequeue();
                 ArraySegment<byte> segment = new ArraySegment<byte>(packet.Data, 0, packet.Length);
-                base.Transport.HandleServerReceivedData(new ServerReceivedDataArgs(segment, (Channel)packet.Channel, FishyFacepunch.CLIENT_HOST_ID, Transport.Index));
+                base.Transport.HandleServerReceivedDataArgs(new ServerReceivedDataArgs(segment, (Channel)packet.Channel, FishyFacepunch.CLIENT_HOST_ID, Transport.Index));
                 packet.Dispose();
             }
 
@@ -285,7 +285,7 @@ namespace FishyFacepunch.Server
         private void OnMessageReceived(Connection conn, IntPtr dataPtr, int size)
         {
             (byte[] data, int ch) = ProcessMessage(dataPtr, size);
-            base.Transport.HandleServerReceivedData(new ServerReceivedDataArgs(new ArraySegment<byte>(data), (Channel)ch, _steamConnections[conn], Transport.Index));
+            base.Transport.HandleServerReceivedDataArgs(new ServerReceivedDataArgs(new ArraySegment<byte>(data), (Channel)ch, _steamConnections[conn], Transport.Index));
         }
 
         /// <summary>
