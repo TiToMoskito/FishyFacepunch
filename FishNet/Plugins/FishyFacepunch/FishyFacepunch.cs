@@ -9,6 +9,11 @@ namespace FishyFacepunch
 {
     public class FishyFacepunch : Transport
     {
+        #region Public.
+        [System.NonSerialized]
+        public ulong LocalUserSteamID;
+        #endregion
+
         #region Serialized.
         /// <summary>
         /// Steam application Id.
@@ -124,8 +129,9 @@ namespace FishyFacepunch
         {
 #if !UNITY_SERVER
             SteamNetworkingUtils.InitRelayNetworkAccess();
+            LocalUserSteamID = Steamworks.SteamClient.SteamId.Value;
 #endif
-        }
+        } 
         #endregion
 
         #region ConnectionStates.
@@ -211,7 +217,7 @@ namespace FishyFacepunch
             {
                 _client.IterateIncoming();
                 _clientHost.IterateIncoming();
-            }                
+            }
         }
 
         /// <summary>
@@ -302,11 +308,7 @@ namespace FishyFacepunch
         {
             _clientAddress = address;
         }
-        /// <summary>
-        /// Sets which address the server will bind to.
-        /// </summary>
-        /// <param name="address"></param>
-        public override void SetServerBindAddress(string address)
+        public override void SetServerBindAddress(string address, IPAddressType addressType)
         {
             _serverBindAddress = address;
         }
@@ -335,6 +337,8 @@ namespace FishyFacepunch
         /// <param name="server">True to start server.</param>
         public override bool StartConnection(bool server)
         {
+            Debug.Log("StartConnection fishy server: " + server);
+
             if (server)
                 return StartServer();
             else
@@ -451,7 +455,7 @@ namespace FishyFacepunch
                     _clientHost.StopConnection();
                 //Initialize.
                 InitializeRelayNetworkAccess();
-                
+
                 _client.StartConnection(address, _port);
             }
             //Acting as host.
