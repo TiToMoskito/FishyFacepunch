@@ -6,6 +6,9 @@ A Facepunch implementation for Fish-Net.
 
 FishyFacepunch brings together **[Steam](https://store.steampowered.com)** and **[Fish-Net](https://github.com/FirstGearGames/FishNet)** . It supports only the new SteamSockets.
 
+## !! IMPORTANT !!
+This repo is not updated anymore! Please use the latest from **[FirstGearGames](https://github.com/FirstGearGames/FishyFacepunch)**
+
 ## Dependencies
 Both of these projects need to be installed and working before you can use this transport.
 1. **[Facepunch](https://github.com/Facepunch/Facepunch.Steamworks)** FishyFacepunch relies on Facepunch to communicate with the **[Steamworks API](https://partner.steamgames.com/doc/sdk)**. **Requires .Net 4.x**  
